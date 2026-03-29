@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title_extra %} - Executions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Executions</h2>
+</div>
+
+<div class="data-table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Exec ID</th>
+                <th>Order ID</th>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th class="right">Fill Qty</th>
+                <th class="right">Fill Price</th>
+                <th>Venue</th>
+                <th>Settle Status</th>
+                <th>Settle Date</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exe in executions %}
+            <tr>
+                <td class="mono">{{ exe.exec_id }}</td>
+                <td class="mono">{{ exe.order.order_id if exe.order else '--' }}</td>
+                <td style="font-weight: 500;">{{ exe.order.symbol if exe.order else '--' }}</td>
+                <td>
+                    {% if exe.order %}
+                        <span class="side-{{ exe.order.side|lower }}">{{ exe.order.side }}</span>
+                    {% else %}
+                        --
+                    {% endif %}
+                </td>
+                <td class="right mono">{{ "{:,.0f}".format(exe.fill_qty) }}</td>
+                <td class="right mono">{{ "%.4f"|format(exe.fill_price) if exe.fill_price > 100 and exe.fill_price < 200 else "%.2f"|format(exe.fill_price) }}</td>
+                <td>
+                    <span class="badge" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+                        {{ exe.venue or '--' }}
+                    </span>
+                </td>
+                <td>
+                    {% if exe.settle_status == 'Settled' %}
+                        <span class="badge badge-filled">Settled</span>
+                    {% elif exe.settle_status == 'Matched' %}
+                        <span class="badge badge-working">Matched</span>
+                    {% elif exe.settle_status == 'Pending' %}
+                        <span class="badge badge-partial">Pending</span>
+                    {% elif exe.settle_status == 'Failed' %}
+                        <span class="badge badge-rejected">Failed</span>
+                    {% endif %}
+                </td>
+                <td>{{ exe.settle_date or '--' }}</td>
+                <td class="mono" style="color: var(--text-muted);">
+                    {{ exe.exec_time.strftime('%H:%M:%S') if exe.exec_time else '--' }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

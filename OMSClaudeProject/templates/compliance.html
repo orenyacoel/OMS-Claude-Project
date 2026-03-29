@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title_extra %} - Compliance{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Compliance Dashboard</h2>
+</div>
+
+<div class="two-col">
+    <!-- Active Rules -->
+    <div>
+        <h3 style="font-size: 14px; margin-bottom: 12px;">Active Rules</h3>
+        <div class="data-table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rule</th>
+                        <th>Type</th>
+                        <th>Threshold</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in rules %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500;">{{ rule.rule_name }}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">{{ rule.description }}</div>
+                        </td>
+                        <td>
+                            <span class="badge" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+                                {{ rule.rule_type }}
+                            </span>
+                        </td>
+                        <td class="mono">
+                            {% if rule.rule_type == 'concentration' %}
+                                {{ rule.threshold }}%
+                            {% elif rule.rule_type == 'position_limit' %}
+                                ${{ "{:,.0f}".format(rule.threshold) }}
+                            {% elif rule.rule_type == 'restricted_list' %}
+                                {{ rule.parameter }}
+                            {% else %}
+                                {{ rule.threshold }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rule.is_active %}
+                                <span class="rule-active">Active</span>
+                            {% else %}
+                                <span class="rule-inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Violations -->
+    <div>
+        <h3 style="font-size: 14px; margin-bottom: 12px;">Recent Violations</h3>
+        {% if failed_orders %}
+            <div class="compliance-alerts">
+                {% for order in failed_orders %}
+                <div class="alert-item danger">
+                    <span class="alert-icon">&#9888;</span>
+                    <div>
+                        <div style="font-weight: 500;">{{ order.order_id }} - {{ order.symbol }} {{ order.side }} {{ "{:,.0f}".format(order.quantity) }}</div>
+                        <div style="font-size: 11px; margin-top: 2px;">{{ order.compliance_note }}</div>
+                        <div style="font-size: 11px; margin-top: 4px; opacity: 0.7;">
+                            {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }} | Account: {{ order.account.account_code }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="icon">&#10004;</div>
+                <p>No compliance violations today</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title_extra %} - Positions{% endblock %}
+
+{% block content %}
+<div class="stats-bar">
+    <div class="stat-card">
+        <div class="label">Total Market Value</div>
+        <div class="value blue">${{ "{:,.0f}".format(total_mv) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Unrealized P&L</div>
+        <div class="value {{ 'green' if total_pnl >= 0 else 'red' }}">
+            {{ '+' if total_pnl >= 0 else '' }}${{ "{:,.0f}".format(total_pnl) }}
+        </div>
+    </div>
+</div>
+
+<div class="page-header">
+    <h2>Positions</h2>
+</div>
+
+<form class="filter-bar" method="get" action="{{ url_for('positions') }}">
+    <label>Account</label>
+    <select name="account" onchange="this.form.submit()">
+        <option value="All" {{ 'selected' if account_filter == 'All' }}>All Accounts</option>
+        {% for acct in accounts %}
+        <option value="{{ acct.id }}" {{ 'selected' if account_filter == acct.id|string }}>
+            {{ acct.account_code }} - {{ acct.account_name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <div class="separator"></div>
+
+    <label>Asset Class</label>
+    <select name="asset_class" onchange="this.form.submit()">
+        <option value="All" {{ 'selected' if asset_filter == 'All' }}>All</option>
+        <option value="Equity" {{ 'selected' if asset_filter == 'Equity' }}>Equity</option>
+        <option value="Fixed Income" {{ 'selected' if asset_filter == 'Fixed Income' }}>Fixed Income</option>
+        <option value="FX" {{ 'selected' if asset_filter == 'FX' }}>FX</option>
+        <option value="Derivative" {{ 'selected' if asset_filter == 'Derivative' }}>Derivatives</option>
+    </select>
+</form>
+
+<div class="data-table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Asset</th>
+                <th>Symbol</th>
+                <th>Description</th>
+                <th class="right">Quantity</th>
+                <th class="right">Avg Cost</th>
+                <th class="right">Mkt Price</th>
+                <th class="right">Market Value</th>
+                <th class="right">Unrealized P&L</th>
+                <th>CCY</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pos in positions %}
+            <tr>
+                <td class="mono" style="font-size: 11px;">{{ pos.account.account_code }}</td>
+                <td>
+                    {% if pos.asset_class == 'Equity' %}
+                        <span class="badge badge-equity">EQ</span>
+                    {% elif pos.asset_class == 'Fixed Income' %}
+                        <span class="badge badge-fi">FI</span>
+                    {% elif pos.asset_class == 'FX' %}
+                        <span class="badge badge-fx">FX</span>
+                    {% elif pos.asset_class == 'Derivative' %}
+                        <span class="badge badge-deriv">DRV</span>
+                    {% endif %}
+                </td>
+                <td style="font-weight: 500;">{{ pos.symbol }}</td>
+                <td style="color: var(--text-secondary);">{{ pos.description }}</td>
+                <td class="right mono">
+                    <span class="{{ 'pnl-negative' if pos.quantity < 0 else '' }}">
+                        {{ "{:,.0f}".format(pos.quantity) }}
+                    </span>
+                </td>
+                <td class="right mono">{{ "%.2f"|format(pos.avg_cost) if pos.avg_cost < 1000 else "{:,.2f}".format(pos.avg_cost) }}</td>
+                <td class="right mono">{{ "%.2f"|format(pos.market_price) if pos.market_price < 1000 else "{:,.2f}".format(pos.market_price) }}</td>
+                <td class="right mono">${{ "{:,.0f}".format(pos.market_value) }}</td>
+                <td class="right mono">
+                    <span class="{{ 'pnl-positive' if pos.unrealized_pnl >= 0 else 'pnl-negative' }}">
+                        {{ '+' if pos.unrealized_pnl >= 0 else '' }}${{ "{:,.0f}".format(pos.unrealized_pnl) }}
+                    </span>
+                </td>
+                <td>{{ pos.currency }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title_extra %} - Trade Blotter{% endblock %}
+
+{% block content %}
+<!-- Stats bar at the top -->
+<div class="stats-bar">
+    <div class="stat-card">
+        <div class="label">Total Orders</div>
+        <div class="value blue">{{ stats.total }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Filled</div>
+        <div class="value green">{{ stats.filled }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Working</div>
+        <div class="value yellow">{{ stats.working }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Rejected</div>
+        <div class="value red">{{ stats.rejected }}</div>
+    </div>
+</div>
+
+<!-- Page header with filters -->
+<div class="page-header">
+    <h2>Trade Blotter</h2>
+    <div class="timestamp">{{ now.strftime('%Y-%m-%d %H:%M:%S') }} EST</div>
+</div>
+
+<!-- Filter controls -->
+<form class="filter-bar" method="get" action="{{ url_for('blotter') }}">
+    <label>Asset Class</label>
+    <select name="asset_class" onchange="this.form.submit()">
+        <option value="All" {{ 'selected' if asset_filter == 'All' }}>All</option>
+        <option value="Equity" {{ 'selected' if asset_filter == 'Equity' }}>Equity</option>
+        <option value="Fixed Income" {{ 'selected' if asset_filter == 'Fixed Income' }}>Fixed Income</option>
+        <option value="FX" {{ 'selected' if asset_filter == 'FX' }}>FX</option>
+        <option value="Derivative" {{ 'selected' if asset_filter == 'Derivative' }}>Derivatives</option>
+    </select>
+
+    <div class="separator"></div>
+
+    <label>Status</label>
+    <select name="status" onchange="this.form.submit()">
+        <option value="All" {{ 'selected' if status_filter == 'All' }}>All</option>
+        <option value="Filled" {{ 'selected' if status_filter == 'Filled' }}>Filled</option>
+        <option value="Working" {{ 'selected' if status_filter == 'Working' }}>Working</option>
+        <option value="Partial" {{ 'selected' if status_filter == 'Partial' }}>Partial</option>
+        <option value="Rejected" {{ 'selected' if status_filter == 'Rejected' }}>Rejected</option>
+        <option value="Cancelled" {{ 'selected' if status_filter == 'Cancelled' }}>Cancelled</option>
+    </select>
+
+    <div class="separator"></div>
+
+    <label>Account</label>
+    <select name="account" onchange="this.form.submit()">
+        <option value="All" {{ 'selected' if account_filter == 'All' }}>All Accounts</option>
+        {% for acct in accounts %}
+        <option value="{{ acct.id }}" {{ 'selected' if account_filter == acct.id|string }}>{{ acct.account_code }}</option>
+        {% endfor %}
+    </select>
+
+    <!-- Hidden fields to preserve other filters -->
+    <input type="hidden" name="asset_class" value="{{ asset_filter }}" disabled>
+</form>
+
+<!-- Orders table -->
+<div class="data-table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Asset</th>
+                <th>Side</th>
+                <th>Symbol</th>
+                <th class="right">Quantity</th>
+                <th>Type</th>
+                <th class="right">Limit</th>
+                <th>Status</th>
+                <th class="right">Filled</th>
+                <th class="right">Avg Px</th>
+                <th>Broker</th>
+                <th>Account</th>
+                <th>Time</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td class="mono">{{ order.order_id }}</td>
+                <td>
+                    {% if order.asset_class == 'Equity' %}
+                        <span class="badge badge-equity">EQ</span>
+                    {% elif order.asset_class == 'Fixed Income' %}
+                        <span class="badge badge-fi">FI</span>
+                    {% elif order.asset_class == 'FX' %}
+                        <span class="badge badge-fx">FX</span>
+                    {% elif order.asset_class == 'Derivative' %}
+                        <span class="badge badge-deriv">DRV</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="side-{{ order.side|lower }}">{{ order.side }}</span>
+                </td>
+                <td style="font-weight: 500;">{{ order.symbol }}</td>
+                <td class="right mono">{{ "{:,.0f}".format(order.quantity) }}</td>
+                <td>{{ order.order_type }}</td>
+                <td class="right mono">
+                    {% if order.limit_price %}
+                        {{ "%.2f"|format(order.limit_price) if order.limit_price < 1000 else "{:,.2f}".format(order.limit_price) }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </td>
+                <td>
+                    {% if order.status == 'Filled' %}
+                        <span class="badge badge-filled">Filled</span>
+                    {% elif order.status == 'Working' %}
+                        <span class="badge badge-working">Working</span>
+                    {% elif order.status == 'Partial' %}
+                        <span class="badge badge-partial">Partial</span>
+                    {% elif order.status == 'Rejected' %}
+                        <span class="badge badge-rejected">Rejected</span>
+                    {% elif order.status == 'Cancelled' %}
+                        <span class="badge badge-cancelled">Cancelled</span>
+                    {% elif order.status == 'New' %}
+                        <span class="badge badge-new">New</span>
+                    {% endif %}
+                </td>
+                <td class="right mono">{{ "{:,.0f}".format(order.filled_qty) }}</td>
+                <td class="right mono">
+                    {% if order.avg_price %}
+                        {{ "%.4f"|format(order.avg_price) if order.asset_class == 'FX' else "%.2f"|format(order.avg_price) }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </td>
+                <td>{{ order.broker }}</td>
+                <td class="mono" style="font-size: 11px;">{{ order.account.account_code }}</td>
+                <td class="mono" style="color: var(--text-muted);">{{ order.created_at.strftime('%H:%M:%S') }}</td>
+                <td>
+                    {% if order.status in ('Working', 'Partial', 'New') %}
+                    <form method="post" action="{{ url_for('cancel_order', order_id=order.id) }}" style="display:inline;">
+                        <button type="submit" class="btn-danger" onclick="return confirm('Cancel order {{ order.order_id }}?')">Cancel</button>
+                    </form>
+                    {% elif order.status == 'Rejected' %}
+                    <span style="font-size: 11px; color: var(--red);" title="{{ order.compliance_note }}">&#9432; hover</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Order Entry Form -->
+<div class="order-entry">
+    <h3>New Order Ticket</h3>
+    <form method="post" action="{{ url_for('create_order') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Asset Class</label>
+                <select name="asset_class" id="asset-class-select">
+                    <option value="Equity">Equity</option>
+                    <option value="Fixed Income">Fixed Income</option>
+                    <option value="FX">FX</option>
+                    <option value="Derivative">Derivative</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Side</label>
+                <select name="side">
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Symbol</label>
+                <input type="text" name="symbol" placeholder="e.g. AAPL" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="Security name">
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" name="quantity" placeholder="0" required>
+            </div>
+            <div class="form-group">
+                <label>Order Type</label>
+                <select name="order_type">
+                    <option value="Market">Market</option>
+                    <option value="Limit">Limit</option>
+                    <option value="Stop">Stop</option>
+                    <option value="VWAP">VWAP</option>
+                    <option value="TWAP">TWAP</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Limit Price</label>
+                <input type="number" step="0.01" name="limit_price" placeholder="--">
+            </div>
+            <div class="form-group">
+                <label>Broker</label>
+                <select name="broker">
+                    <option value="GS">Goldman Sachs</option>
+                    <option value="JPM">JP Morgan</option>
+                    <option value="MS">Morgan Stanley</option>
+                    <option value="BARC">Barclays</option>
+                    <option value="CITI">Citi</option>
+                    <option value="UBS">UBS</option>
+                    <option value="BofA">Bank of America</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Account</label>
+                <select name="account_id">
+                    {% for acct in accounts %}
+                    <option value="{{ acct.id }}">{{ acct.account_code }} - {{ acct.account_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Time in Force</label>
+                <select name="tif">
+                    <option value="DAY">DAY</option>
+                    <option value="GTC">GTC</option>
+                    <option value="IOC">IOC</option>
+                    <option value="FOK">FOK</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Submit Order</button>
+            <button type="reset" class="btn btn-secondary">Clear</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

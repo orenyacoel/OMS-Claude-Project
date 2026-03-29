@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Capital OMS{% block title_extra %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts - Inter for the UI text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar - this stays the same on every page -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <h1>Apex Capital</h1>
+                <div class="subtitle">Order Management System</div>
+            </div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="{{ url_for('blotter') }}" class="{{ 'active' if active_page == 'blotter' }}">
+                        <span class="icon">&#9776;</span> Trade Blotter
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('positions') }}" class="{{ 'active' if active_page == 'positions' }}">
+                        <span class="icon">&#9635;</span> Positions
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('executions') }}" class="{{ 'active' if active_page == 'executions' }}">
+                        <span class="icon">&#8644;</span> Executions
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('compliance') }}" class="{{ 'active' if active_page == 'compliance' }}">
+                        <span class="icon">&#9888;</span> Compliance
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                Demo System v1.0<br>
+                Phase 1 - Core OMS
+            </div>
+        </nav>
+
+        <!-- Main content - changes per page -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>
