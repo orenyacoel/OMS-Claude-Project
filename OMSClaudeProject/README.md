@@ -36,7 +36,7 @@ This is a functional demo OMS that mirrors the core features of systems like Cha
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/oms-demo.git
+git clone https://github.com/orenyacoel/OMSClaudeProject.git
 cd oms-demo
 
 # Install dependencies
